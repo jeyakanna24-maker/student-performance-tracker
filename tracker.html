@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Performance Tracker — VELS Robotics &amp; AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy-950:#0a1330;
+  --navy-900:#0f1c3f;
+  --navy-800:#16264f;
+  --navy-700:#22366b;
+  --teal-500:#00b89f;
+  --teal-400:#2fe0c4;
+  --lime-400:#b6ff5c;
+  --paper:#f5f8fb;
+  --card:#ffffff;
+  --ink:#0f1c3f;
+  --muted:#66738c;
+  --line:#dfe6f0;
+  --amber:#e8a23d;
+  --danger:#e05a5a;
+  --radius-s:4px;
+  --radius-m:8px;
+}
+:root:not([data-theme="light"]){
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0a1024;
+    --card:#101a38;
+    --ink:#eef2fb;
+    --muted:#93a0bf;
+    --line:#233156;
+    --navy-900:#0a1330;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0a1024;
+  --card:#101a38;
+  --ink:#eef2fb;
+  --muted:#93a0bf;
+  --line:#233156;
+  --navy-900:#0a1330;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+}
+h1,h2,h3,.brand,.wordmark{
+  font-family:'Space Grotesk',sans-serif;
+}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::selection{background:var(--lime-400);color:var(--navy-950);}
+:focus-visible{outline:2px solid var(--teal-500);outline-offset:2px;}
+
+/* ---------- layout shells ---------- */
+.screen{min-height:100vh;display:flex;flex-direction:column;}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 28px;background:var(--navy-900);color:#fff;
+  border-bottom:3px solid var(--teal-500);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.2px;}
+.brand .node{width:10px;height:10px;border-radius:50%;background:var(--lime-400);box-shadow:0 0 0 4px rgba(182,255,92,.18);}
+.brand small{display:block;font-family:'Inter';font-weight:400;font-size:11px;color:#a9b6d8;margin-top:2px;}
+.topbar-right{display:flex;align-items:center;gap:14px;font-size:13px;color:#c8d2ea;}
+.topbar-right .who{font-weight:600;color:#fff;}
+.btn{
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  padding:9px 16px;border-radius:var(--radius-s);font-size:14px;font-weight:600;
+  transition:transform .08s ease, border-color .12s ease;
+}
+.btn:hover{border-color:var(--teal-500);}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--teal-500);border-color:var(--teal-500);color:#03251f;}
+.btn-primary:hover{background:var(--teal-400);border-color:var(--teal-400);}
+.btn-ghost{background:transparent;border-color:transparent;color:#c8d2ea;}
+.btn-ghost:hover{border-color:#3a4b7a;}
+.btn-danger{background:transparent;border-color:var(--danger);color:var(--danger);}
+.btn-danger:hover{background:var(--danger);color:#fff;}
+.btn-sm{padding:6px 12px;font-size:12.5px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ---------- auth ---------- */
+.auth-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(0,184,159,.14), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(182,255,92,.10), transparent 40%),
+    var(--navy-900);
+  padding:32px 18px;position:relative;overflow:hidden;
+}
+.circuit{position:absolute;inset:0;opacity:.16;pointer-events:none;}
+.auth-card{
+  position:relative;z-index:1;
+  width:100%;max-width:420px;background:var(--card);border-radius:var(--radius-m);
+  padding:34px 30px 28px;box-shadow:0 30px 60px -20px rgba(0,0,0,.55);
+}
+.auth-head{margin-bottom:22px;}
+.auth-head h1{font-size:22px;margin:0 0 4px;letter-spacing:.2px;}
+.auth-head p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5;}
+.role-toggle{display:flex;border:1px solid var(--line);border-radius:var(--radius-s);overflow:hidden;margin-bottom:22px;}
+.role-toggle button{
+  flex:1;padding:10px;border:none;background:var(--card);color:var(--muted);font-weight:600;font-size:13.5px;
+  border-right:1px solid var(--line);
+}
+.role-toggle button:last-child{border-right:none;}
+.role-toggle button.active{background:var(--navy-900);color:#fff;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-s);
+  font-size:14px;background:var(--paper);color:var(--ink);
+}
+.field textarea{resize:vertical;min-height:70px;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal-500);}
+.auth-switch{margin-top:16px;font-size:13px;color:var(--muted);text-align:center;}
+.auth-switch a{color:var(--teal-500);font-weight:600;cursor:pointer;text-decoration:none;}
+.hint{font-size:12px;color:var(--muted);margin-top:10px;padding:8px 10px;background:var(--paper);border-left:2px solid var(--teal-500);border-radius:2px;}
+.error-msg{background:rgba(224,90,90,.1);border:1px solid var(--danger);color:var(--danger);font-size:13px;padding:9px 12px;border-radius:var(--radius-s);margin-bottom:14px;}
+
+/* ---------- dashboard shell ---------- */
+.dash{display:flex;flex:1;min-height:0;}
+.sidebar{
+  width:220px;flex-shrink:0;background:var(--navy-900);color:#c8d2ea;
+  padding:20px 12px;display:flex;flex-direction:column;gap:3px;
+}
+.sidebar .grp-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5c6c95;padding:14px 12px 6px;}
+.side-link{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-s);
+  font-size:14px;font-weight:500;color:#c8d2ea;border-left:3px solid transparent;
+}
+.side-link .dot{width:6px;height:6px;border-radius:50%;background:#4c5c88;flex-shrink:0;}
+.side-link:hover{background:rgba(255,255,255,.05);}
+.side-link.active{background:rgba(0,184,159,.14);color:#fff;border-left-color:var(--teal-500);}
+.side-link.active .dot{background:var(--lime-400);}
+.main{flex:1;min-width:0;padding:28px 32px 60px;overflow-y:auto;}
+.main-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:22px;}
+.main-head h2{font-size:22px;margin:0;}
+.main-head p{margin:4px 0 0;color:var(--muted);font-size:13.5px;}
+
+/* ---------- cards / stats ---------- */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:26px;}
+.stat{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--teal-500);border-radius:var(--radius-s);padding:14px 16px;}
+.stat .num{font-family:'Space Grotesk';font-size:26px;font-weight:700;}
+.stat .lbl{font-size:12.5px;color:var(--muted);margin-top:2px;}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-m);padding:22px;margin-bottom:22px;}
+.panel h3{margin:0 0 16px;font-size:15px;display:flex;align-items:center;gap:8px;}
+.chart-row{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;}
+@media(max-width:900px){.chart-row{grid-template-columns:1fr;}}
+canvas{max-height:260px;}
+
+/* forms */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;}
+.form-grid .span2{grid-column:1/-1;}
+@media(max-width:640px){.form-grid{grid-template-columns:1fr;}}
+
+/* entry list */
+.entry{
+  border:1px solid var(--line);border-radius:var(--radius-s);padding:14px 16px;margin-bottom:10px;
+  display:flex;justify-content:space-between;gap:14px;align-items:flex-start;
+}
+.entry .body h4{margin:0 0 3px;font-size:14.5px;}
+.entry .body .meta{font-size:12.5px;color:var(--muted);margin-bottom:4px;}
+.entry .body p{margin:4px 0 0;font-size:13px;color:var(--ink);opacity:.85;}
+.entry .proof-tag{
+  display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--teal-500);
+  border:1px solid var(--teal-500);border-radius:12px;padding:2px 9px;margin-top:6px;text-decoration:none;
+}
+.entry .actions{display:flex;gap:6px;flex-shrink:0;}
+.empty{
+  border:1px dashed var(--line);border-radius:var(--radius-s);padding:28px 20px;text-align:center;color:var(--muted);font-size:13.5px;
+}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr.row-click{cursor:pointer;}
+tr.row-click:hover{background:var(--paper);}
+.pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11.5px;font-weight:600;}
+.pill.dept{background:rgba(0,184,159,.13);color:var(--teal-500);}
+.ring{position:relative;width:46px;height:46px;flex-shrink:0;}
+.ring svg{transform:rotate(-90deg);}
+.ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.searchbar{display:flex;gap:10px;margin-bottom:16px;}
+.searchbar input{flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--card);color:var(--ink);font-size:14px;}
+
+/* detail modal-ish panel */
+.detail-back{display:flex;align-items:center;gap:8px;color:var(--teal-500);font-size:13px;font-weight:600;margin-bottom:16px;cursor:pointer;}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px;}
+.detail-head h2{margin:0 0 4px;}
+.detail-head .meta{color:var(--muted);font-size:13.5px;}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 10px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:"";flex:1;height:1px;background:var(--line);}
+
+@media(max-width:800px){
+  .dash{flex-direction:column;}
+  .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:10px 14px;}
+  .sidebar .grp-label{display:none;}
+  .side-link{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;}
+  .side-link.active{border-left:none;border-bottom-color:var(--teal-500);}
+  .main{padding:20px 16px 50px;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============ DATA LAYER ============ */
+const DB_KEY = 'spt_students_v1';
+const ADMIN_CREDS = { username:'admin', password:'admin123' };
+const DEPTS = ['B.Tech Robotics & AI','B.Tech CSE','B.Tech Mechanical','B.Tech ECE','B.Tech IT'];
+
+function loadStudents(){
+  try{ return JSON.parse(localStorage.getItem(DB_KEY)) || []; }catch(e){ return []; }
+}
+function saveStudents(list){
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(list)); }catch(e){ console.error('Storage error', e); }
+}
+function getSession(){
+  try{ return JSON.parse(sessionStorage.getItem('spt_session')); }catch(e){ return null; }
+}
+function setSession(s){
+  try{ sessionStorage.setItem('spt_session', JSON.stringify(s)); }catch(e){}
+}
+function clearSession(){
+  try{ sessionStorage.removeItem('spt_session'); }catch(e){}
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function findStudent(roll){ return loadStudents().find(s=>s.roll.toLowerCase()===roll.toLowerCase()); }
+function esc(str){ const d=document.createElement('div'); d.textContent = str==null?'':str; return d.innerHTML; }
+
+/* ============ APP STATE ============ */
+const S = {
+  authRole:'student',      // student | admin
+  authMode:'login',        // login | register
+  session:getSession(),    // {role, roll} or {role:'admin'}
+  studentTab:'profile',
+  adminTab:'overview',
+  adminSelectedRoll:null,
+  pendingProof:{}          // holds {dataUrl, name} for the currently-open form
+};
+
+const app = document.getElementById('app');
+
+/* ============ RENDER ROUTER ============ */
+function render(){
+  if(!S.session){ renderAuth(); return; }
+  if(S.session.role==='student'){ renderStudentDash(); return; }
+  if(S.session.role==='admin'){ renderAdminDash(); return; }
+}
+
+/* ============ AUTH SCREEN ============ */
+function renderAuth(){
+  const isStudent = S.authRole==='student';
+  app.innerHTML = `
+  <div class="auth-wrap">
+    <svg class="circuit" width="100%" height="100%" viewBox="0 0 800 800" preserveAspectRatio="none">
+      <g stroke="#2fe0c4" stroke-width="1.2" fill="none">
+        <path d="M0 120 H180 V260 H420 V90 H800"/>
+        <path d="M0 480 H140 V620 H360 V740 H800"/>
+        <path d="M240 0 V180 H520 V420 H700 V800"/>
+      </g>
+      <g fill="#b6ff5c">
+        <circle cx="180" cy="120" r="4"/><circle cx="420" cy="260" r="4"/>
+        <circle cx="140" cy="480" r="4"/><circle cx="360" cy="620" r="4"/>
+        <circle cx="520" cy="180" r="4"/><circle cx="700" cy="420" r="4"/>
+      </g>
+    </svg>
+    <div class="auth-card">
+      <div class="auth-head">
+        <div class="brand" style="color:var(--navy-900);margin-bottom:14px;"><span class="node"></span>Student Performance Tracker</div>
+        <h1>${isStudent ? (S.authMode==='login'?'Welcome back':'Create your student account') : 'Admin sign in'}</h1>
+        <p>${isStudent ? 'B.Tech Robotics &amp; AI Engineering — VELS' : 'Restricted to department administrators only.'}</p>
+      </div>
+      <div class="role-toggle">
+        <button data-role="student" class="${isStudent?'active':''}">Student</button>
+        <button data-role="admin" class="${!isStudent?'active':''}">Admin</button>
+      </div>
+      <div id="authError"></div>
+      ${isStudent ? renderStudentAuthForm() : renderAdminAuthForm()}
+    </div>
+  </div>`;
+  wireAuthEvents();
+}
+
+function renderStudentAuthForm(){
+  if(S.authMode==='login'){
+    return `
+    <form id="loginForm">
+      <div class="field"><label for="roll">Roll number</label><input id="roll" required placeholder="e.g. 22RA045" autocomplete="username"></div>
+      <div class="field"><label for="pass">Password</label><input id="pass" type="password" required placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="btn btn-primary" style="width:100%" type="submit">Log in</button>
+      <div class="auth-switch">New here? <a id="toRegister">Create a student account</a></div>
+    </form>`;
+  }
+  return `
+    <form id="registerForm">
+      <div class="field"><label for="rName">Full name</label><input id="rName" required placeholder="Your full name"></div>
+      <div class="field"><label for="rRoll">Roll number</label><input id="rRoll" required placeholder="e.g. 22RA045"></div>
+      <div class="field"><label for="rDept">Department</label>
+        <select id="rDept">${DEPTS.map(d=>`<option ${d==='B.Tech Robotics & AI'?'selected':''}>${d}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label for="rContact">Contact number</label><input id="rContact" required placeholder="10-digit mobile number"></div>
+      <div class="field"><label for="rPass">Password</label><input id="rPass" type="password" required placeholder="Create a password"></div>
+      <button class="btn btn-primary" style="width:100%" type="submit">Create account</button>
+      <div class="auth-switch">Already registered? <a id="toLogin">Log in instead</a></div>
+    </form>`;
+}
+
+function renderAdminAuthForm(){
+  return `
+    <form id="adminForm">
+      <div class="field"><label for="aUser">Username</label><input id="aUser" required autocomplete="username"></div>
+      <div class="field"><label for="aPass">Password</label><input id="aPass" type="password" required autocomplete="current-password"></div>
+      <button class="btn btn-primary" style="width:100%" type="submit">Log in</button>
+      <div class="hint">Demo admin login — username <strong>admin</strong>, password <strong>admin123</strong>.</div>
+    </form>`;
+}
+
+function authError(msg){
+  document.getElementById('authError').innerHTML = `<div class="error-msg">${esc(msg)}</div>`;
+}
+
+function wireAuthEvents(){
+  document.querySelectorAll('.role-toggle button').forEach(b=>{
+    b.onclick = ()=>{ S.authRole=b.dataset.role; S.authMode='login'; render(); };
+  });
+  const toReg = document.getElementById('toRegister');
+  if(toReg) toReg.onclick = ()=>{ S.authMode='register'; render(); };
+  const toLog = document.getElementById('toLogin');
+  if(toLog) toLog.onclick = ()=>{ S.authMode='login'; render(); };
+
+  const loginForm = document.getElementById('loginForm');
+  if(loginForm) loginForm.onsubmit = (e)=>{
+    e.preventDefault();
+    const roll = document.getElementById('roll').value.trim();
+    const pass = document.getElementById('pass').value;
+    const stu = findStudent(roll);
+    if(!stu || stu.password!==pass){ authError('Roll number or password is incorrect.'); return; }
+    S.session = { role:'student', roll: stu.roll };
+    setSession(S.session);
+    S.studentTab='profile';
+    render();
+  };
+
+  const regForm = document.getElementById('registerForm');
+  if(regForm) regForm.onsubmit = (e)=>{
+    e.preventDefault();
+    const name=document.getElementById('rName').value.trim();
+    const roll=document.getElementById('rRoll').value.trim();
+    const dept=document.getElementById('rDept').value;
+    const contact=document.getElementById('rContact').value.trim();
+    const pass=document.getElementById('rPass').value;
+    if(!name||!roll||!contact||!pass){ authError('Please fill in every field.'); return; }
+    if(findStudent(roll)){ authError('An account with this roll number already exists.'); return; }
+    const students = loadStudents();
+    students.push({ roll, password:pass, name, dept, contact, internships:[], projects:[], competitions:[], skilling:[] });
+    saveStudents(students);
+    S.session = { role:'student', roll };
+    setSession(S.session);
+    S.studentTab='profile';
+    render();
+  };
+
+  const adminForm = document.getElementById('adminForm');
+  if(adminForm) adminForm.onsubmit = (e)=>{
+    e.preventDefault();
+    const u=document.getElementById('aUser').value.trim();
+    const p=document.getElementById('aPass').value;
+    if(u!==ADMIN_CREDS.username || p!==ADMIN_CREDS.password){ authError('Incorrect admin credentials.'); return; }
+    S.session = { role:'admin' };
+    setSession(S.session);
+    S.adminTab='overview';
+    render();
+  };
+}
+
+function logout(){
+  clearSession();
+  S.session=null;
+  render();
+}
+
+/* ============ SHARED TOPBAR ============ */
+function topbar(roleLabel, name){
+  return `
+  <div class="topbar">
+    <div class="brand"><span class="node"></span>Student Performance Tracker<small>VELS · B.Tech Robotics &amp; AI Engineering</small></div>
+    <div class="topbar-right">
+      <span>${roleLabel} — <span class="who">${esc(name)}</span></span>
+      <button class="btn btn-ghost btn-sm" id="logoutBtn">Log out</button>
+    </div>
+  </div>`;
+}
+function wireTopbar(){
+  document.getElementById('logoutBtn').onclick = logout;
+}
+
+/* ============ PROOF FILE HELPERS ============ */
+function wireProofInput(inputId, stateKey){
+  const el = document.getElementById(inputId);
+  if(!el) return;
+  el.onchange = ()=>{
+    const file = el.files[0];
+    if(!file) return;
+    if(file.size > 2*1024*1024){
+      alert('Please attach a file under 2 MB for this demo tracker.');
+      el.value='';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ()=>{ S.pendingProof[stateKey] = { name:file.name, data:reader.result }; };
+    reader.readAsDataURL(file);
+  };
+}
+function proofTag(entry){
+  if(!entry.proofData) return '';
+  return `<a class="proof-tag" href="${entry.proofData}" download="${esc(entry.proofName||'proof')}">&#128206; ${esc(entry.proofName||'View proof')}</a>`;
+}
+
+/* ============ STUDENT DASHBOARD ============ */
+function currentStudent(){ return findStudent(S.session.roll); }
+
+const STUDENT_LINKS = [
+  {key:'profile', label:'Profile'},
+  {key:'internships', label:'Internships'},
+  {key:'projects', label:'Projects'},
+  {key:'competitions', label:'Competitions'},
+  {key:'skilling', label:'Skilling & certifications'},
+];
+
+function renderStudentDash(){
+  const stu = currentStudent();
+  if(!stu){ logout(); return; }
+  app.innerHTML = `
+  <div class="screen">
+    ${topbar('Student', stu.name)}
+    <div class="dash">
+      <div class="sidebar">
+        <div class="grp-label">Track</div>
+        ${STUDENT_LINKS.map(l=>`<div class="side-link ${S.studentTab===l.key?'active':''}" data-tab="${l.key}"><span class="dot"></span>${l.label}</div>`).join('')}
+      </div>
+      <div class="main" id="studentMain"></div>
+    </div>
+  </div>`;
+  wireTopbar();
+  document.querySelectorAll('.side-link').forEach(l=>{
+    l.onclick = ()=>{ S.studentTab=l.dataset.tab; S.pendingProof={}; renderStudentMain(); };
+  });
+  renderStudentMain();
+}
+
+function completionPct(stu){
+  const parts = [stu.internships.length, stu.projects.length, stu.competitions.length, stu.skilling.length];
+  const done = parts.filter(n=>n>0).length;
+  return Math.round((done/4)*100);
+}
+
+function renderStudentMain(){
+  const stu = currentStudent();
+  const main = document.getElementById('studentMain');
+  if(S.studentTab==='profile'){ main.innerHTML = studentProfileView(stu); wireProfileForm(); return; }
+  const map = { internships:internshipConfig, projects:projectConfig, competitions:competitionConfig, skilling:skillingConfig };
+  const cfg = map[S.studentTab];
+  main.innerHTML = studentEntryView(stu, cfg);
+  wireEntryForm(cfg, stu);
+}
+
+function studentProfileView(stu){
+  const pct = completionPct(stu);
+  return `
+  <div class="main-head"><div><h2>Your profile</h2><p>Keep your personal details up to date — admins use this to verify your records.</p></div></div>
+  <div class="stat-row">
+    <div class="stat"><div class="num">${stu.internships.length}</div><div class="lbl">Internships logged</div></div>
+    <div class="stat"><div class="num">${stu.projects.length}</div><div class="lbl">Projects logged</div></div>
+    <div class="stat"><div class="num">${stu.competitions.length}</div><div class="lbl">Competitions logged</div></div>
+    <div class="stat"><div class="num">${stu.skilling.length}</div><div class="lbl">Certifications logged</div></div>
+  </div>
+  <div class="panel">
+    <h3>Personal details</h3>
+    <form id="profileForm" class="form-grid">
+      <div class="field"><label for="pName">Full name</label><input id="pName" value="${esc(stu.name)}" required></div>
+      <div class="field"><label for="pRoll">Roll number</label><input id="pRoll" value="${esc(stu.roll)}" disabled></div>
+      <div class="field"><label for="pDept">Department</label><select id="pDept">${DEPTS.map(d=>`<option ${d===stu.dept?'selected':''}>${d}</option>`).join('')}</select></div>
+      <div class="field"><label for="pContact">Contact number</label><input id="pContact" value="${esc(stu.contact)}" required></div>
+      <div class="span2"><button class="btn btn-primary" type="submit">Save changes</button></div>
+    </form>
+  </div>
+  <div class="panel">
+    <h3>Overall progress — ${pct}% of categories started</h3>
+    <div style="height:10px;background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--teal-500),var(--lime-400));"></div>
+    </div>
+  </div>`;
+}
+
+function wireProfileForm(){
+  document.getElementById('profileForm').onsubmit = (e)=>{
+    e.preventDefault();
+    const students = loadStudents();
+    const idx = students.findIndex(s=>s.roll===S.session.roll);
+    students[idx].name = document.getElementById('pName').value.trim();
+    students[idx].dept = document.getElementById('pDept').value;
+    students[idx].contact = document.getElementById('pContact').value.trim();
+    saveStudents(students);
+    renderStudentDash();
+  };
+}
+
+/* ---- entry-type configs (internships / projects / competitions / skilling) ---- */
+const internshipConfig = {
+  key:'internships', title:'Internships', addLabel:'Add internship', emptyText:'No internships added yet. Log your first internship below.',
+  fields:[
+    {id:'title', label:'Role / title', ph:'e.g. Robotics Intern'},
+    {id:'company', label:'Organisation', ph:'e.g. Bosch Ltd.'},
+    {id:'duration', label:'Duration', ph:'e.g. Jun 2026 – Aug 2026'},
+  ],
+  descLabel:'What did you work on?',
+  render:(e)=>`<h4>${esc(e.title)}</h4><div class="meta">${esc(e.company)} · ${esc(e.duration)}</div>`
+};
+const projectConfig = {
+  key:'projects', title:'Projects', addLabel:'Add project', emptyText:'No projects added yet. Log your first project below.',
+  fields:[
+    {id:'title', label:'Project title', ph:'e.g. Autonomous Line-Following Bot'},
+    {id:'company', label:'Tech stack', ph:'e.g. ROS, Python, OpenCV'},
+    {id:'duration', label:'Timeline', ph:'e.g. Jan 2026 – Mar 2026'},
+  ],
+  descLabel:'Project summary',
+  render:(e)=>`<h4>${esc(e.title)}</h4><div class="meta">${esc(e.company)} · ${esc(e.duration)}</div>`
+};
+const competitionConfig = {
+  key:'competitions', title:'Competitions', addLabel:'Add competition', emptyText:'No competitions added yet. Log your first result below.',
+  fields:[
+    {id:'title', label:'Competition name', ph:'e.g. Smart India Hackathon'},
+    {id:'company', label:'Result / position', ph:'e.g. Finalist, Top 10'},
+    {id:'duration', label:'Date', ph:'e.g. Aug 2026'},
+  ],
+  descLabel:'About the competition',
+  render:(e)=>`<h4>${esc(e.title)}</h4><div class="meta">${esc(e.company)} · ${esc(e.duration)}</div>`
+};
+const skillingConfig = {
+  key:'skilling', title:'Skilling & certifications', addLabel:'Add certification', emptyText:'No certifications added yet. Log your first one below.',
+  fields:[
+    {id:'title', label:'Certification name', ph:'e.g. NVIDIA Deep Learning Fundamentals'},
+    {id:'company', label:'Provider', ph:'e.g. NVIDIA / Coursera / NPTEL'},
+    {id:'duration', label:'Date completed', ph:'e.g. Feb 2026'},
+  ],
+  descLabel:'Skills covered',
+  render:(e)=>`<h4>${esc(e.title)}</h4><div class="meta">${esc(e.company)} · ${esc(e.duration)}</div>`
+};
+
+function studentEntryView(stu, cfg){
+  const entries = stu[cfg.key];
+  return `
+  <div class="main-head">
+    <div><h2>${cfg.title}</h2><p>Add records with supporting proof — certificates, letters, or screenshots.</p></div>
+  </div>
+  <div class="panel">
+    <h3>${cfg.addLabel}</h3>
+    <form id="entryForm" class="form-grid">
+      ${cfg.fields.map(f=>`<div class="field"><label for="f_${f.id}">${f.label}</label><input id="f_${f.id}" placeholder="${f.ph}" required></div>`).join('')}
+      <div class="field span2"><label for="f_desc">${cfg.descLabel}</label><textarea id="f_desc" placeholder="Add a short description"></textarea></div>
+      <div class="field span2"><label for="f_proof">Proof / supporting document (optional, under 2 MB)</label><input id="f_proof" type="file"></div>
+      <div class="span2"><button class="btn btn-primary" type="submit">${cfg.addLabel}</button></div>
+    </form>
+  </div>
+  <div class="section-title">${cfg.title} on record (${entries.length})</div>
+  ${entries.length===0 ? `<div class="empty">${cfg.emptyText}</div>` :
+    entries.slice().reverse().map(e=>`
+      <div class="entry">
+        <div class="body">
+          ${cfg.render(e)}
+          ${e.desc?`<p>${esc(e.desc)}</p>`:''}
+          ${proofTag(e)}
+        </div>
+        <div class="actions"><button class="btn btn-danger btn-sm" data-del="${e.id}">Remove</button></div>
+      </div>
+    `).join('')
+  }`;
+}
+
+function wireEntryForm(cfg, stu){
+  wireProofInput('f_proof', 'entry');
+  document.getElementById('entryForm').onsubmit = (e)=>{
+    e.preventDefault();
+    const students = loadStudents();
+    const idx = students.findIndex(s=>s.roll===S.session.roll);
+    const proof = S.pendingProof.entry;
+    const entry = {
+      id: uid(),
+      title: document.getElementById('f_title').value.trim(),
+      company: document.getElementById('f_company').value.trim(),
+      duration: document.getElementById('f_duration').value.trim(),
+      desc: document.getElementById('f_desc').value.trim(),
+      proofName: proof?proof.name:null,
+      proofData: proof?proof.data:null,
+    };
+    students[idx][cfg.key].push(entry);
+    saveStudents(students);
+    S.pendingProof={};
+    renderStudentMain();
+  };
+  document.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(!confirm('Remove this record?')) return;
+      const students = loadStudents();
+      const idx = students.findIndex(s=>s.roll===S.session.roll);
+      students[idx][cfg.key] = students[idx][cfg.key].filter(x=>x.id!==btn.dataset.del);
+      saveStudents(students);
+      renderStudentMain();
+    };
+  });
+}
+
+/* ============ ADMIN DASHBOARD ============ */
+const ADMIN_LINKS = [
+  {key:'overview', label:'Overview & analytics'},
+  {key:'students', label:'All students'},
+  {key:'reports', label:'Reports & export'},
+];
+
+function renderAdminDash(){
+  app.innerHTML = `
+  <div class="screen">
+    ${topbar('Admin', 'Department Admin')}
+    <div class="dash">
+      <div class="sidebar">
+        <div class="grp-label">Manage</div>
+        ${ADMIN_LINKS.map(l=>`<div class="side-link ${S.adminTab===l.key?'active':''}" data-tab="${l.key}"><span class="dot"></span>${l.label}</div>`).join('')}
+      </div>
+      <div class="main" id="adminMain"></div>
+    </div>
+  </div>`;
+  wireTopbar();
+  document.querySelectorAll('.side-link').forEach(l=>{
+    l.onclick = ()=>{ S.adminTab=l.dataset.tab; S.adminSelectedRoll=null; renderAdminMain(); };
+  });
+  renderAdminMain();
+}
+
+function renderAdminMain(){
+  const main = document.getElementById('adminMain');
+  if(S.adminSelectedRoll){ main.innerHTML = adminStudentDetail(S.adminSelectedRoll); wireDetailBack(); return; }
+  if(S.adminTab==='overview'){ main.innerHTML = adminOverview(); requestAnimationFrame(drawAdminCharts); return; }
+  if(S.adminTab==='students'){ main.innerHTML = adminStudentList(); wireStudentList(); return; }
+  if(S.adminTab==='reports'){ main.innerHTML = adminReports(); wireReports(); return; }
+}
+
+function adminOverview(){
+  const students = loadStudents();
+  const totals = { internships:0, projects:0, competitions:0, skilling:0 };
+  students.forEach(s=>{ totals.internships+=s.internships.length; totals.projects+=s.projects.length; totals.competitions+=s.competitions.length; totals.skilling+=s.skilling.length; });
+  return `
+  <div class="main-head"><div><h2>Overview &amp; analytics</h2><p>A live snapshot of every student's progress across the department.</p></div></div>
+  <div class="stat-row">
+    <div class="stat"><div class="num">${students.length}</div><div class="lbl">Registered students</div></div>
+    <div class="stat"><div class="num">${totals.internships}</div><div class="lbl">Internships logged</div></div>
+    <div class="stat"><div class="num">${totals.projects}</div><div class="lbl">Projects logged</div></div>
+    <div class="stat"><div class="num">${totals.competitions}</div><div class="lbl">Competitions logged</div></div>
+    <div class="stat"><div class="num">${totals.skilling}</div><div class="lbl">Certifications logged</div></div>
+  </div>
+  <div class="chart-row">
+    <div class="panel"><h3>Records by category</h3><canvas id="catChart"></canvas></div>
+    <div class="panel"><h3>Students by department</h3><canvas id="deptChart"></canvas></div>
+  </div>
+  <div class="panel"><h3>Students below 50% profile completion</h3>
+    ${renderLaggards(students)}
+  </div>`;
+}
+
+function renderLaggards(students){
+  const behind = students.filter(s=>completionPct(s)<50);
+  if(behind.length===0) return `<div class="empty">Every student has started at least two categories. Nice work.</div>`;
+  return `<table><thead><tr><th>Name</th><th>Roll no.</th><th>Department</th><th>Progress</th></tr></thead><tbody>
+    ${behind.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.roll)}</td><td>${esc(s.dept)}</td><td>${completionPct(s)}%</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+function drawAdminCharts(){
+  const students = loadStudents();
+  const totals = { internships:0, projects:0, competitions:0, skilling:0 };
+  students.forEach(s=>{ totals.internships+=s.internships.length; totals.projects+=s.projects.length; totals.competitions+=s.competitions.length; totals.skilling+=s.skilling.length; });
+  const catEl = document.getElementById('catChart');
+  const deptEl = document.getElementById('deptChart');
+  if(!catEl || typeof Chart==='undefined') return;
+  new Chart(catEl, {
+    type:'bar',
+    data:{ labels:['Internships','Projects','Competitions','Certifications'],
+      datasets:[{ data:[totals.internships,totals.projects,totals.competitions,totals.skilling],
+        backgroundColor:['#00b89f','#2fe0c4','#b6ff5c','#22366b'], borderRadius:4 }] },
+    options:{ plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true, ticks:{precision:0}} } }
+  });
+  const deptCounts = {};
+  students.forEach(s=>{ deptCounts[s.dept]=(deptCounts[s.dept]||0)+1; });
+  const labels = Object.keys(deptCounts);
+  if(labels.length===0){ deptEl.replaceWith(Object.assign(document.createElement('div'),{className:'empty',textContent:'No students registered yet.'})); return; }
+  new Chart(deptEl, {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data:labels.map(l=>deptCounts[l]), backgroundColor:['#00b89f','#2fe0c4','#b6ff5c','#22366b','#e8a23d'] }] },
+    options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:11}}}} }
+  });
+}
+
+function adminStudentList(){
+  const students = loadStudents();
+  return `
+  <div class="main-head"><div><h2>All students</h2><p>Search and open any student's full record.</p></div></div>
+  <div class="searchbar"><input id="stuSearch" placeholder="Search by name, roll number, or department..."></div>
+  <div class="panel" style="padding:0;overflow-x:auto;">
+    <table>
+      <thead><tr><th>Progress</th><th>Name</th><th>Roll no.</th><th>Department</th><th>Contact</th><th>Records</th></tr></thead>
+      <tbody id="stuTableBody">${studentRows(students)}</tbody>
+    </table>
+  </div>`;
+}
+
+function studentRows(students){
+  if(students.length===0) return `<tr><td colspan="6"><div class="empty" style="border:none;">No students have registered yet.</div></td></tr>`;
+  return students.map(s=>{
+    const pct = completionPct(s);
+    const total = s.internships.length+s.projects.length+s.competitions.length+s.skilling.length;
+    return `<tr class="row-click" data-roll="${esc(s.roll)}">
+      <td>${ringSvg(pct)}</td>
+      <td>${esc(s.name)}</td>
+      <td>${esc(s.roll)}</td>
+      <td><span class="pill dept">${esc(s.dept)}</span></td>
+      <td>${esc(s.contact)}</td>
+      <td>${total}</td>
+    </tr>`;
+  }).join('');
+}
+
+function ringSvg(pct){
+  const r=18, c=2*Math.PI*r, off=c*(1-pct/100);
+  return `<div class="ring"><svg width="46" height="46" viewBox="0 0 46 46">
+    <circle cx="23" cy="23" r="${r}" stroke="#dfe6f0" stroke-width="5" fill="none"/>
+    <circle cx="23" cy="23" r="${r}" stroke="#00b89f" stroke-width="5" fill="none" stroke-dasharray="${c}" stroke-dashoffset="${off}" stroke-linecap="round"/>
+  </svg><span>${pct}%</span></div>`;
+}
+
+function wireStudentList(){
+  const search = document.getElementById('stuSearch');
+  search.oninput = ()=>{
+    const q = search.value.trim().toLowerCase();
+    const filtered = loadStudents().filter(s=>
+      s.name.toLowerCase().includes(q) || s.roll.toLowerCase().includes(q) || s.dept.toLowerCase().includes(q));
+    document.getElementById('stuTableBody').innerHTML = studentRows(filtered);
+    wireRowClicks();
+  };
+  wireRowClicks();
+}
+function wireRowClicks(){
+  document.querySelectorAll('[data-roll]').forEach(tr=>{
+    tr.onclick = ()=>{ S.adminSelectedRoll = tr.dataset.roll; renderAdminMain(); };
+  });
+}
+
+function adminStudentDetail(roll){
+  const stu = findStudent(roll);
+  if(!stu) return `<div class="empty">Student not found.</div>`;
+  const section = (cfg)=>`
+    <div class="section-title">${cfg.title} (${stu[cfg.key].length})</div>
+    ${stu[cfg.key].length===0 ? `<div class="empty">Nothing logged in this category yet.</div>` :
+      stu[cfg.key].slice().reverse().map(e=>`
+        <div class="entry"><div class="body">${cfg.render(e)}${e.desc?`<p>${esc(e.desc)}</p>`:''}${proofTag(e)}</div></div>
+      `).join('')}`;
+  return `
+  <div class="detail-back" id="backToList">&larr; Back to all students</div>
+  <div class="detail-head">
+    <div>
+      <h2>${esc(stu.name)}</h2>
+      <div class="meta">${esc(stu.roll)} · <span class="pill dept">${esc(stu.dept)}</span> · ${esc(stu.contact)}</div>
+    </div>
+    ${ringSvg(completionPct(stu))}
+  </div>
+  ${section(internshipConfig)}
+  ${section(projectConfig)}
+  ${section(competitionConfig)}
+  ${section(skillingConfig)}
+  `;
+}
+function wireDetailBack(){
+  document.getElementById('backToList').onclick = ()=>{ S.adminSelectedRoll=null; renderAdminMain(); };
+}
+
+function adminReports(){
+  const students = loadStudents();
+  return `
+  <div class="main-head"><div><h2>Reports &amp; export</h2><p>Download the full department record as a spreadsheet-ready CSV file.</p></div></div>
+  <div class="panel">
+    <h3>Export all student records</h3>
+    <p style="color:var(--muted);font-size:13.5px;margin:0 0 16px;">Includes profile details and category totals for all ${students.length} registered student${students.length===1?'':'s'}.</p>
+    <button class="btn btn-primary" id="exportCsv">Download CSV report</button>
+  </div>
+  <div class="panel">
+    <h3>Data &amp; access notes</h3>
+    <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin:0;">
+      Records are stored locally in this browser. Students can only edit their own account; only an authenticated admin
+      can view or export records across the department.
+    </p>
+  </div>`;
+}
+function wireReports(){
+  document.getElementById('exportCsv').onclick = ()=>{
+    const students = loadStudents();
+    const rows = [['Name','Roll No','Department','Contact','Internships','Projects','Competitions','Certifications','Completion %']];
+    students.forEach(s=>rows.push([s.name,s.roll,s.dept,s.contact,s.internships.length,s.projects.length,s.competitions.length,s.skilling.length,completionPct(s)+'%']));
+    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'student_performance_report.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
+}
+
+/* ============ INIT ============ */
+render();
+</script>
+</body>
+</html>
